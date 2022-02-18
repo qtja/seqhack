@@ -217,7 +217,6 @@ tactic * mk_rewriter_tactic(ast_manager & m, params_ref const & p) {
 }
 
 tactic * mk_z3str3_tactic(ast_manager & m, params_ref const & p) {
-	std::cout << "SHIT" << std::endl;
     smt_params m_smt_params;
     m_smt_params.updt_params(p);
     params_ref seq_p = p;

@@ -552,8 +552,9 @@ public:
     }
 
     void updt_params(params_ref const& p) override {
-        m_params = p;
-        m_imp->updt_params(p);
+	//m_params = p;
+        m_params.append(p);
+	m_imp->updt_params(p);
     }
 
     void operator()(goal_ref const& in, goal_ref_buffer& result) override {
@@ -570,6 +571,7 @@ public:
         std::swap(d, m_imp);
         dealloc(d);
     }
+    char const* name() const override { return "z3str3_tactic"; }
 };
 
 tactic * mk_ext_str_tactic(ast_manager & m, params_ref const & p) {
