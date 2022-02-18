@@ -33,9 +33,9 @@ class ext_str_tactic : public tactic {
 
         // Returns a regular expression of the form [0-9]+.
         expr_ref re_one_or_more_digits() {
-            symbol zero("0");
-            symbol nine("9");
-            expr_ref re_zero_to_nine(u.re.mk_range(u.str.mk_string(zero), u.str.mk_string(nine)), m);
+            //symbol zero("0");
+            //symbol nine("9");
+            expr_ref re_zero_to_nine(u.re.mk_range(u.str.mk_string("0"), u.str.mk_string("9")), m);
             return expr_ref(u.re.mk_plus(re_zero_to_nine), m);
         }
         
@@ -48,13 +48,13 @@ class ext_str_tactic : public tactic {
 
             expr_ref_vector union_terms(m);
             for (rational i = rational::zero(); i <= upper_bound; i += 1) {
-                symbol i_string(i.to_string().c_str());
-                expr_ref i_expr(u.re.mk_to_re(u.str.mk_string(i_string)), m);
+                //symbol i_string(i.to_string().c_str());
+                expr_ref i_expr(u.re.mk_to_re(u.str.mk_string(i.to_string().c_str())), m);
                 union_terms.push_back(i_expr);
             }
             
-            symbol zero("0");
-            expr_ref re_leading_zeroes(u.re.mk_star(u.re.mk_to_re(u.str.mk_string(zero))), m);
+            //symbol zero("0");
+            expr_ref re_leading_zeroes(u.re.mk_star(u.re.mk_to_re(u.str.mk_string("0"))), m);
 
             expr_ref re_union(union_terms.get(0), m);
             if (union_terms.size() > 1) {
@@ -93,9 +93,9 @@ class ext_str_tactic : public tactic {
                 if (rewrite_applies) {
                     if (integer_constant.is_nonneg()) {
                         TRACE("ext_str_tactic", tout << "str.to_int rewrite applies: " << mk_pp(string_subterm, m) << " in 0*" << integer_constant << std::endl;);
-                        symbol integer_constant_string(integer_constant.to_string().c_str());
-                        symbol zero("0");
-                        expr_ref regex(u.re.mk_concat(u.re.mk_star(u.re.mk_to_re(u.str.mk_string(zero))), u.re.mk_to_re(u.str.mk_string(integer_constant_string))), m);
+                        //symbol integer_constant_string(integer_constant.to_string().c_str());
+                        //symbol zero("0");
+                        expr_ref regex(u.re.mk_concat(u.re.mk_star(u.re.mk_to_re(u.str.mk_string("0"))), u.re.mk_to_re(u.str.mk_string(integer_constant.to_string().c_str()))), m);
                         expr_ref str_in_regex(u.re.mk_in_re(string_subterm, regex), m);
                         sub.insert(eq, str_in_regex);
                     }

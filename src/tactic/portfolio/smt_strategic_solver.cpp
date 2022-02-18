@@ -32,12 +32,12 @@ Notes:
 #include "tactic/smtlogics/qfufbv_tactic.h"
 #include "tactic/smtlogics/qfidl_tactic.h"
 #include "tactic/smtlogics/nra_tactic.h"
+#include "tactic/smtlogics/z3str3_tactic.h"
 #include "tactic/portfolio/default_tactic.h"
 #include "tactic/fd_solver/fd_solver.h"
 #include "tactic/fd_solver/smtfd_solver.h"
 #include "tactic/ufbv/ufbv_tactic.h"
 #include "tactic/fpa/qffp_tactic.h"
-#include "tactic/smtlogics/z3str3_tactic.h"
 #include "muz/fp/horn_tactic.h"
 #include "smt/smt_solver.h"
 #include "sat/sat_solver/inc_sat_solver.h"
@@ -45,12 +45,14 @@ Notes:
 #include "solver/solver2tactic.h"
 #include "solver/parallel_tactic.h"
 #include "solver/parallel_params.hpp"
+#include "smt/params/smt_params.h"
 #include "tactic/tactic_params.hpp"
 #include "parsers/smt2/smt2parser.h"
 
 
-
 tactic * mk_tactic_for_logic(ast_manager & m, params_ref const & p, symbol const & logic) {
+    smt_params m_smt_params;
+    m_smt_params.updt_params(p);
     if (logic=="QF_UF")
         return mk_qfuf_tactic(m, p);
     else if (logic=="QF_BV")
@@ -101,8 +103,8 @@ tactic * mk_tactic_for_logic(ast_manager & m, params_ref const & p, symbol const
         return mk_horn_tactic(m, p);
     else if ((logic == "QF_FD" || logic == "SAT") && !m.proofs_enabled())
         return mk_fd_tactic(m, p);
-    else if (m_smt_params.m_string_solver == symbol("seqhack"))
-        return mk_z3str3_tactic(m, p);
+    else if (m_smt_params.m_string_solver == symbol("seqhack")){
+	return mk_z3str3_tactic(m, p);}
     else 
         return mk_default_tactic(m, p);
 }

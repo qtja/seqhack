@@ -24,12 +24,12 @@ Notes:
 #include "tactic/tactical.h"
 #include "tactic/core/simplify_tactic.h"
 #include "tactic/str/ext_str_tactic.h"
-#include "tactic/str/str_ml_tactic.h"
-#include "tactic/str/string_cheese_tactic.h"
 #include "tactic/smtlogics/smt_tactic.h"
 #include "smt/params/smt_params.h"
 #include "ast/ast_pp.h"
 
+
+/*
 // conjunctive fragment := cf
 static bool is_cf_helper(ast_manager &m, expr * f, bool sign) 
 {
@@ -209,18 +209,28 @@ public:
 probe * mk_has_regex_probe() {
     return alloc(has_regex_probe);
 }
-
+*/
 tactic * mk_rewriter_tactic(ast_manager & m, params_ref const & p) {
     smt_params m_smt_params;
     m_smt_params.updt_params(p);
-
-    if (m_smt_params.m_RewriterTactic) {
-        return and_then(mk_simplify_tactic(m, p), mk_ext_str_tactic(m, p));
-    } else {
-        return mk_simplify_tactic(m, p);
-    }
+   return and_then(mk_simplify_tactic(m, p), mk_ext_str_tactic(m, p));
 }
 
+tactic * mk_z3str3_tactic(ast_manager & m, params_ref const & p) {
+	std::cout << "SHIT" << std::endl;
+    smt_params m_smt_params;
+    m_smt_params.updt_params(p);
+    params_ref seq_p = p;
+    seq_p.set_sym("string_solver", symbol("seq"));
+    //seq_p.set_bool("tactic_model_validation", true);
+    tactic * z3seq = using_params(mk_smt_tactic(m), seq_p);
+
+    return using_params(and_then(mk_rewriter_tactic(m, p), z3seq), p);
+    //return using_params(mk_smt_tactic(m), seq_p);
+
+}
+
+/*
 tactic * mk_z3str3_tactic(ast_manager & m, params_ref const & p) {
     smt_params m_smt_params;
     m_smt_params.updt_params(p);
@@ -368,4 +378,5 @@ tactic * mk_z3str3_tactic(ast_manager & m, params_ref const & p) {
         return nullptr;
     }
 
-}
+}*/
+

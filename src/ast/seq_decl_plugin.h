@@ -193,7 +193,7 @@ public:
 
     unsigned max_char() const { return get_char_plugin().max_char(); }
     unsigned num_bits() const { return get_char_plugin().num_bits(); }
-
+    
     app* mk_string(zstring const& s);
     app* mk_char(unsigned ch);
 
@@ -274,7 +274,6 @@ public:
         ast_manager& m;
         family_id    m_fid;
 
-
     public:
         str(seq_util& u): u(u), m(u.m), m_fid(u.m_fid) {}
 
@@ -282,7 +281,7 @@ public:
         sort* mk_string_sort() const { return m.mk_sort(m_fid, _STRING_SORT, 0, nullptr); }
         app* mk_empty(sort* s) const { return m.mk_const(m.mk_func_decl(m_fid, OP_SEQ_EMPTY, 0, nullptr, 0, (expr*const*)nullptr, s)); }
         app* mk_string(zstring const& s) const;
-        app* mk_char(unsigned ch) const;
+	app* mk_char(unsigned ch) const;
         app* mk_concat(expr* a, expr* b) const { expr* es[2] = { a, b }; return m.mk_app(m_fid, OP_SEQ_CONCAT, 2, es); }
         app* mk_concat(expr* a, expr* b, expr* c) const { return mk_concat(a, mk_concat(b, c)); }
         expr* mk_concat(unsigned n, expr* const* es, sort* s) const { 

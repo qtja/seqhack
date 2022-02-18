@@ -31,6 +31,7 @@ Notes:
 #include "tactic/smtlogics/qfaufbv_tactic.h"
 #include "tactic/smtlogics/qfauflia_tactic.h"
 #include "tactic/fd_solver/fd_solver.h"
+#include "tactic/smtlogics/z3str3_tactic.h"
 #include "tactic/smtlogics/smt_tactic.h"
 
 tactic * mk_default_tactic(ast_manager & m, params_ref const & p) {
