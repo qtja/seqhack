@@ -706,6 +706,7 @@ bool seq_decl_plugin::is_value(app* e) const {
     }
 }
 
+
 bool seq_decl_plugin::is_model_value(app* e) const {
     if (is_app_of(e, m_family_id, OP_SEQ_EMPTY)) 
         return true;

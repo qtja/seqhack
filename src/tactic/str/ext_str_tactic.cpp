@@ -4,6 +4,7 @@
 #include "ast/ast_pp.h"
 #include "ast/rewriter/expr_replacer.h"
 #include "ast/rewriter/var_subst.h"
+#include <iostream>
 
 class ext_str_tactic : public tactic {
     struct imp {
@@ -234,6 +235,7 @@ class ext_str_tactic : public tactic {
                 bool rewrite_applies = false;
                 rational integer_constant;
 
+
                 if (u.str.is_index(lhs, haystack, needle, index) && m_autil.is_numeral(index, integer_constant) && integer_constant.is_zero()) {
                     if (m_autil.is_numeral(rhs, integer_constant)) {
                         if (integer_constant.is_zero()) {
@@ -244,6 +246,7 @@ class ext_str_tactic : public tactic {
 
                 if (rewrite_applies) {
                     TRACE("ext_str_tactic", tout << "str.indexof >= 0 rewrite applies: " << mk_pp(haystack, m) << " contains " << mk_pp(needle, m) << std::endl;);
+					std::cout << "Rewrite: (str.indexof H N 0) >= 0 --> (str.contains H N)" << std::endl;
                     expr_ref h_in_n(u.str.mk_contains(haystack, needle), m);
                     sub.insert(ge, h_in_n);
                 }
@@ -415,18 +418,103 @@ class ext_str_tactic : public tactic {
                 zstring string_constant;
                 if (u.str.is_string(needle, string_constant)) {
                     TRACE("ext_str_tactic", tout << "str.contains rewrite applies: " << mk_pp(haystack, m) << " in .* \"" << string_constant << "\" .*" << std::endl;);
+                    std::cout << "Rewrite: (str.contains X const) -> (str.in_re X (re.++ .* const .*))" << std::endl;
                     expr_ref string_expr(u.str.mk_string(string_constant), m);
                     expr_ref string_expr_re(u.re.mk_to_re(string_expr), m);
-                    sort * re_str_sort = string_expr_re->get_sort();
+                    sort* re_str_sort = string_expr_re->get_sort();
                     expr_ref re_any_string(u.re.mk_full_seq(re_str_sort), m);
                     expr_ref regex(u.re.mk_concat(re_any_string, u.re.mk_concat(string_expr_re, re_any_string)), m);
                     expr_ref str_in_regex(u.re.mk_in_re(haystack, regex), m);
                     sub.insert(contains, str_in_regex);
+					
+					//Put this here in case smth is different in other rewrites (Stefan)
+					stack.push_back(needle);
+					stack.push_back(haystack);
+					return;
                 }
             }
+            
+			// Rewrite 28: contains(substring x n |y|)) y) -> y = substring (x,n,|y|)
+			{
+                if (u.str.is_extract(haystack)) {
+					expr* inthis; expr* fromhere; expr* substrlen;
+					u.str.is_extract(haystack, inthis, fromhere, substrlen);
+					expr* substrlen_inner; u.str.is_length(substrlen, substrlen_inner);
+					if(needle == substrlen_inner){
+						std::cout << "Rewrite 28: contains(substring x n |y|)) y) -> y = substring (x,n,|y|) " <<  std::endl;
+						expr_ref new_eq(m.mk_eq(needle, haystack), m);
+						std::cout << mk_pp(new_eq, m) << std::endl;
+						sub.insert(contains, new_eq);
+						stack.push_back(needle); 
+						stack.push_back(haystack);
+						return;
+                    } 
+                }
+            }
+            
+            
+            // Rewrite 29: contains(replace(x,y,x), y) -> contains(x,y)
+			// Y and X does not need to be a var, but only the same expressions (==) seems to work as intended
+			{
+                if (u.str.is_replace(haystack)) {
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(haystack, inthis, replacethis, bythis);
+					if(inthis == bythis && replacethis == needle){
+						std::cout << "Rewrite 29: contains(replace(x,y,x), y) -> contains(x,y) " <<  std::endl;
+						expr_ref new_contains(u.str.mk_contains(inthis, needle), m);
+						std::cout << mk_pp(new_contains, m) << std::endl;
+						sub.insert(contains, new_contains);
+						stack.push_back(inthis); 
+						stack.push_back(needle);
+						return;
+                    } 
+                }
+            }
+            
+            // Rewrite 33: contains(x, replace(y,x,y)) -> contains(x,y)
+			{
+				if (u.str.is_replace(needle)) {
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(needle, inthis, replacethis, bythis);
+					if(inthis == bythis && replacethis == haystack){
+						std::cout << "Rewrite 33: contains(x, replace(y,x,y)) -> contains(x,y) " <<  std::endl;
+						expr_ref new_contains(u.str.mk_contains(haystack, inthis), m);
+						std::cout << mk_pp(new_contains, m) << std::endl;
+						sub.insert(contains, new_contains);
+						stack.push_back(haystack);
+						stack.push_back(inthis); 
+						return;
+                    } 
+                }
+            }            
+            
+        }
+        
+		void process_replace(expr* replace, goal_ref const& g, expr_substitution& sub) {
+            if (sub.contains(replace)) return;
 
-            stack.push_back(needle);
-            stack.push_back(haystack);
+            expr* replacebase;
+            expr* replacefind;
+            expr* replacesubs;
+            u.str.is_replace(replace, replacebase, replacefind, replacesubs);
+            std::cout << "bla!" << std::endl;
+            
+			// Rewrite 37: replace( (++ X Y) X Z) -> (++ Z Y)
+			//~ {
+                //~ if (u.str.is_concat(replacebase)) {
+					//~ expr* left; expr* right;
+					//~ u.str.is_concat(replacebase, left, right);
+					//~ if(left == replacefind){
+						//~ std::cout << "Rewrite 37: replace( (++ X Y) X Z) -> (++ Z Y) " <<  std::endl;
+						//~ expr_ref new_conc(u.str.mk_concat(replacesubs, right), m);
+						//~ std::cout << mk_pp(new_conc, m) << std::endl;
+						//~ sub.insert(replace, new_conc);
+						//~ stack.push_back(replacesubs); 
+						//~ stack.push_back(right);
+						//~ return;
+                    //~ } 
+                //~ }
+            //~ }
         }
 
         void operator()(goal_ref const& g, goal_ref_buffer& result) {
@@ -451,6 +539,8 @@ class ext_str_tactic : public tactic {
                 return;
             }
 
+
+			// TODO Top down? Why not bottom up?
             expr_substitution sub(m);
             unsigned size = g->size();
             for (unsigned idx = 0; idx < size; ++idx) {
@@ -485,6 +575,8 @@ class ext_str_tactic : public tactic {
                             process_suffix(curr, g, sub);
                         } else if (u.str.is_contains(curr)) {
                             process_contains(curr, g, sub);
+						} else if (u.str.is_replace(curr)) {
+                            process_replace(curr, g, sub);
                         } else if (u.str.is_in_re(curr)) {
                             process_regex_membership(curr, g, sub);
                         } else {

@@ -26,6 +26,7 @@ Revision History:
 #include "ast/char_decl_plugin.h"
 #include "util/lbool.h"
 #include "util/zstring.h"
+#include <iostream>
 
 enum seq_sort_kind {
     SEQ_SORT,
@@ -209,6 +210,8 @@ public:
 
 };
 
+
+
 class seq_util {
     ast_manager& m;
     seq_decl_plugin& seq;
@@ -357,6 +360,20 @@ public:
         bool is_is_digit(expr const* n) const { return is_app_of(n, m_fid, OP_STRING_IS_DIGIT); }
         bool is_from_code(expr const* n) const { return is_app_of(n, m_fid, OP_STRING_FROM_CODE); }
         bool is_to_code(expr const* n) const { return is_app_of(n, m_fid, OP_STRING_TO_CODE); }
+		
+		bool is_var(expr* a) const {
+			sort * ex_sort = a->get_sort();
+			sort * str_sort = mk_string_sort();
+			return
+				(ex_sort == str_sort) &&
+				!is_string(a) &&
+				!is_concat(a) &&
+				!is_empty(a) &&
+				!is_unit(a) &&
+				!is_itos(a) &&
+				!is_nth_i(a) &&
+				!m.is_ite(a);
+		}
 
         bool is_len_sub(expr const* n, expr*& l, expr*& u, rational& k) const;
 
