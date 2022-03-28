@@ -533,13 +533,27 @@ class ext_str_tactic : public tactic {
                     } 
                 }
             }
+
+            // Rewrite 48 replace(x, y, replace(y,x,y)) = x
+			 {
+                if (u.str.is_replace(replacesubs)) {
+					expr* innerbase; expr* innerfind; expr* innersubs;
+					u.str.is_replace(replacesubs, innerbase, innerfind, innersubs);
+					if(replacebase == innerfind && replacefind == innerbase && replacefind == innersubs){
+						std::cout << "Rewrite 48: replace(x, y, replace(y,x,y)) = x " <<  std::endl;
+						std::cout << mk_pp(replacebase, m) << std::endl;
+						sub.insert(replace, replacebase);
+						stack.push_back(replacebase);
+						return;
+                    } 
+                }
+            }
+            
 			stack.push_back(replacebase);
 			stack.push_back(replacefind); 
-			stack.push_back(replacesubs); 
- 
-            
-            // Rewrite 48 replace(x, y, replace(y,x,y)) = x
-            
+			stack.push_back(replacesubs);             
+			
+			
 			// Rewrite 37: replace( (++ X Y) X Z) -> (++ Z Y)
 			//~ {
                 //~ if (u.str.is_concat(replacebase)) {
