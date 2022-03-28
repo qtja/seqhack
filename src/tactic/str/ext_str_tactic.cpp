@@ -418,7 +418,7 @@ class ext_str_tactic : public tactic {
                 zstring string_constant;
                 if (u.str.is_string(needle, string_constant)) {
                     TRACE("ext_str_tactic", tout << "str.contains rewrite applies: " << mk_pp(haystack, m) << " in .* \"" << string_constant << "\" .*" << std::endl;);
-                    std::cout << "Rewrite: (str.contains X const) -> (str.in_re X (re.++ .* const .*))" << std::endl;
+                    //std::cout << "Rewrite: (str.contains X const) -> (str.in_re X (re.++ .* const .*))" << std::endl;
                     expr_ref string_expr(u.str.mk_string(string_constant), m);
                     expr_ref string_expr_re(u.re.mk_to_re(string_expr), m);
                     sort* re_str_sort = string_expr_re->get_sort();
@@ -441,9 +441,9 @@ class ext_str_tactic : public tactic {
 					u.str.is_extract(haystack, inthis, fromhere, substrlen);
 					expr* substrlen_inner; u.str.is_length(substrlen, substrlen_inner);
 					if(needle == substrlen_inner){
-						std::cout << "Rewrite 28: contains(substring x n |y|)) y) -> y = substring (x,n,|y|) " <<  std::endl;
+						//~ std::cout << "Rewrite 28: contains(substring x n |y|)) y) -> y = substring (x,n,|y|) " <<  std::endl;
 						expr_ref new_eq(m.mk_eq(needle, haystack), m);
-						std::cout << mk_pp(new_eq, m) << std::endl;
+						//~ std::cout << mk_pp(new_eq, m) << std::endl;
 						sub.insert(contains, new_eq);
 						stack.push_back(needle); 
 						stack.push_back(haystack);
@@ -460,9 +460,9 @@ class ext_str_tactic : public tactic {
 					expr* inthis; expr* replacethis; expr* bythis;
 					u.str.is_replace(haystack, inthis, replacethis, bythis);
 					if(inthis == bythis && replacethis == needle){
-						std::cout << "Rewrite 29: contains(replace(x,y,x), y) -> contains(x,y) " <<  std::endl;
+						//~ std::cout << "Rewrite 29: contains(replace(x,y,x), y) -> contains(x,y) " <<  std::endl;
 						expr_ref new_contains(u.str.mk_contains(inthis, needle), m);
-						std::cout << mk_pp(new_contains, m) << std::endl;
+						//~ std::cout << mk_pp(new_contains, m) << std::endl;
 						sub.insert(contains, new_contains);
 						stack.push_back(inthis); 
 						stack.push_back(needle);
@@ -477,16 +477,19 @@ class ext_str_tactic : public tactic {
 					expr* inthis; expr* replacethis; expr* bythis;
 					u.str.is_replace(needle, inthis, replacethis, bythis);
 					if(inthis == bythis && replacethis == haystack){
-						std::cout << "Rewrite 33: contains(x, replace(y,x,y)) -> contains(x,y) " <<  std::endl;
+						//~ std::cout << "Rewrite 33: contains(x, replace(y,x,y)) -> contains(x,y) " <<  std::endl;
 						expr_ref new_contains(u.str.mk_contains(haystack, inthis), m);
-						std::cout << mk_pp(new_contains, m) << std::endl;
+						//~ std::cout << mk_pp(new_contains, m) << std::endl;
 						sub.insert(contains, new_contains);
 						stack.push_back(haystack);
 						stack.push_back(inthis); 
 						return;
                     } 
                 }
-            }            
+            }    
+            
+			stack.push_back(needle);
+			stack.push_back(haystack);        
             
         }
         
@@ -497,7 +500,45 @@ class ext_str_tactic : public tactic {
             expr* replacefind;
             expr* replacesubs;
             u.str.is_replace(replace, replacebase, replacefind, replacesubs);
-            std::cout << "bla!" << std::endl;
+            
+            // Rewrite 43 replace(x, replace(x,y,x), x) = x
+            {
+                if (u.str.is_replace(replacefind)) {
+					expr* innerbase; expr* innerfind; expr* innersubs;
+					u.str.is_replace(replacefind, innerbase, innerfind, innersubs);
+					if(replacebase == innerbase && replacebase == innersubs && replacebase == replacesubs){
+						//~ std::cout << "Rewrite 43: replace(x, replace(x,y,x), x) = x " <<  std::endl;
+						//~ std::cout << mk_pp(replacebase, m) << std::endl;
+						sub.insert(replace, replacebase);
+						stack.push_back(replacebase);
+						return;
+                    } 
+                }
+            }
+            
+            // Rewrite 44 replace(x, replace(y,x,y), w) = replace(x,y,w)
+             {
+                if (u.str.is_replace(replacefind)) {
+					expr* innerbase; expr* innerfind; expr* innersubs;
+					u.str.is_replace(replacefind, innerbase, innerfind, innersubs);
+					if(replacebase == innerfind && innerbase == innersubs){
+						//~ std::cout << "Rewrite 44: replace(x, replace(y,x,y), w) = replace(x,y,w) " <<  std::endl;
+						expr_ref new_repl(u.str.mk_replace(replacebase, innerbase, replacesubs), m);
+						//~ std::cout << mk_pp(new_repl, m) << std::endl;
+						sub.insert(replace, new_repl);
+						stack.push_back(replacebase);
+						stack.push_back(innerbase);
+						stack.push_back(replacesubs);
+						return;
+                    } 
+                }
+            }
+			stack.push_back(replacebase);
+			stack.push_back(replacefind); 
+			stack.push_back(replacesubs); 
+ 
+            
+            // Rewrite 48 replace(x, y, replace(y,x,y)) = x
             
 			// Rewrite 37: replace( (++ X Y) X Z) -> (++ Z Y)
 			//~ {
