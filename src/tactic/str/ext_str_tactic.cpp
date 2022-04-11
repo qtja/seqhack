@@ -418,7 +418,7 @@ class ext_str_tactic : public tactic {
                 zstring string_constant;
                 if (u.str.is_string(needle, string_constant)) {
                     TRACE("ext_str_tactic", tout << "str.contains rewrite applies: " << mk_pp(haystack, m) << " in .* \"" << string_constant << "\" .*" << std::endl;);
-                    //std::cout << "Rewrite: (str.contains X const) -> (str.in_re X (re.++ .* const .*))" << std::endl;
+                    std::cout << "Rewrite: (str.contains X const) -> (str.in_re X (re.++ .* const .*))" << std::endl;
                     expr_ref string_expr(u.str.mk_string(string_constant), m);
                     expr_ref string_expr_re(u.re.mk_to_re(string_expr), m);
                     sort* re_str_sort = string_expr_re->get_sort();
@@ -428,7 +428,6 @@ class ext_str_tactic : public tactic {
                     sub.insert(contains, str_in_regex);
 					
 					//Put this here in case smth is different in other rewrites (Stefan)
-					stack.push_back(needle);
 					stack.push_back(haystack);
 					return;
                 }
@@ -445,8 +444,7 @@ class ext_str_tactic : public tactic {
 						expr_ref new_eq(m.mk_eq(needle, haystack), m);
 						//~ std::cout << mk_pp(new_eq, m) << std::endl;
 						sub.insert(contains, new_eq);
-						stack.push_back(needle); 
-						stack.push_back(haystack);
+						stack.push_back(new_eq);
 						return;
                     } 
                 }
@@ -462,10 +460,9 @@ class ext_str_tactic : public tactic {
 					if(inthis == bythis && replacethis == needle){
 						//~ std::cout << "Rewrite 29: contains(replace(x,y,x), y) -> contains(x,y) " <<  std::endl;
 						expr_ref new_contains(u.str.mk_contains(inthis, needle), m);
-						//~ std::cout << mk_pp(new_contains, m) << std::endl;
+						std::cout << mk_pp(new_contains, m) << std::endl;
 						sub.insert(contains, new_contains);
-						stack.push_back(inthis); 
-						stack.push_back(needle);
+						stack.push_back(new_contains);
 						return;
                     } 
                 }
@@ -479,10 +476,9 @@ class ext_str_tactic : public tactic {
 					if(inthis == bythis && replacethis == haystack){
 						//~ std::cout << "Rewrite 33: contains(x, replace(y,x,y)) -> contains(x,y) " <<  std::endl;
 						expr_ref new_contains(u.str.mk_contains(haystack, inthis), m);
-						//~ std::cout << mk_pp(new_contains, m) << std::endl;
+						std::cout << mk_pp(new_contains, m) << std::endl;
 						sub.insert(contains, new_contains);
-						stack.push_back(haystack);
-						stack.push_back(inthis); 
+						stack.push_back(new_contains);
 						return;
                     } 
                 }
@@ -526,9 +522,7 @@ class ext_str_tactic : public tactic {
 						expr_ref new_repl(u.str.mk_replace(replacebase, innerbase, replacesubs), m);
 						//~ std::cout << mk_pp(new_repl, m) << std::endl;
 						sub.insert(replace, new_repl);
-						stack.push_back(replacebase);
-						stack.push_back(innerbase);
-						stack.push_back(replacesubs);
+						stack.push_back(new_repl);
 						return;
                     } 
                 }
