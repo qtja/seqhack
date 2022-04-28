@@ -5,6 +5,8 @@
 #include "ast/rewriter/expr_replacer.h"
 #include "ast/rewriter/var_subst.h"
 #include <iostream>
+#include <map>
+#include <set>
 
 class ext_str_tactic : public tactic {
     struct imp {
@@ -15,9 +17,14 @@ class ext_str_tactic : public tactic {
         arith_util m_autil;
         scoped_ptr<expr_replacer> m_replace;
         ptr_vector<expr> stack;
+        
+        //Maps for storing some information about expressions for PRE/POSTPROCESSING
+        std::map<expr* , expr*> const_var;
+        //std::map<expr* , expr*> regex_agg;
+        
         ref<mc> m_mc;
         bool m_produce_models;
-
+		
         const rational str_to_int_finitization_upper_bound = rational(50);
 
         imp(ast_manager& _m, params_ref const& p) :
@@ -67,6 +74,11 @@ class ext_str_tactic : public tactic {
             return expr_ref(u.re.mk_concat(re_leading_zeroes, re_union), m);
         }
 
+		/* ####################################################################################
+		 * REWRITE functions
+		 * #################################################################################### 
+		 */
+
         void process_eq(expr* eq, goal_ref const& g, expr_substitution& sub) {
             if (sub.contains(eq)) return;
 
@@ -74,7 +86,7 @@ class ext_str_tactic : public tactic {
             expr* rhs;
 
             m.is_eq(eq, lhs, rhs);
-
+			
             // Rewrite: (= (str.to_int S) #const) and #const >= 0 --> (str.in_re S (0* ++ #const))
             {
                 bool rewrite_applies = false;
@@ -149,9 +161,31 @@ class ext_str_tactic : public tactic {
                 if (u.re.is_full_char(re_term)) {
                     expr_ref subst(m.mk_eq(u.str.mk_length(str_term), m_autil.mk_numeral(rational::one(), true)), m);
                     sub.insert(str_in_re, subst);
+                    stack.push_back(subst);
+                    return;
                 }
             }
             
+            /*
+             * 
+             * TODO: Check this for a postprocessing?
+            {
+				std::map<expr*, expr*>::iterator it;
+				it = regex_agg.find(str_term);
+				if(it == regex_agg.end()){
+					regex_agg[str_term] = re_term;
+				} else {
+					std::cout << mk_pp(str_term, m) << std::endl;
+					std::cout << mk_pp(regex_agg[str_term], m) << std::endl;
+					expr* old_re_term = it->second;
+                    expr_ref new_re_term(u.re.mk_inter(old_re_term, re_term), m);
+					sub.insert(re_term, new_re_term);
+					sub.erase(old_re_term);
+					it->second = new_re_term;
+				}
+				
+			}
+            */
             stack.push_back(str_term);
             stack.push_back(re_term);
         }
@@ -361,6 +395,13 @@ class ext_str_tactic : public tactic {
             expr* haystack;
             u.str.is_prefix(prefix, needle, haystack);
 
+           //Replace a Variable that has been marked as a constant before by a constant
+            std::map<expr*, expr*>::iterator it;
+            it = const_var.find(needle);
+            if(it != const_var.end()){
+				needle = it->second;
+			}
+
             // Rewrite: (str.prefixof "constant" S) --> (str.in_re S ("constant" ++ .*))
             {
                 zstring string_constant;
@@ -387,6 +428,14 @@ class ext_str_tactic : public tactic {
             expr* haystack;
             u.str.is_suffix(suffix, needle, haystack);
 
+
+           //Replace a Variable that has been marked as a constant before by a constant
+            std::map<expr*, expr*>::iterator it;
+            it = const_var.find(needle);
+            if(it != const_var.end()){
+				needle = it->second;
+			}
+			
             // Rewrite: (str.suffixof "constant" S) --> (str.in_re S (.* ++ "constant"))
             {
                 zstring string_constant;
@@ -412,13 +461,21 @@ class ext_str_tactic : public tactic {
             expr * needle;
             expr * haystack;
             u.str.is_contains(contains, haystack, needle);
+            
+            
+            //Replace a Variable that has been marked as a constant before in rewrite-preprocessing
+            std::map<expr*, expr*>::iterator it;
+            it = const_var.find(needle);
+            if(it != const_var.end()){
+				needle = it->second;
+			}
 
             // Rewrite: (str.contains X "const") -> (str.in_re X (re.++ .* "const" .*))
             {
                 zstring string_constant;
                 if (u.str.is_string(needle, string_constant)) {
-                    TRACE("ext_str_tactic", tout << "str.contains rewrite applies: " << mk_pp(haystack, m) << " in .* \"" << string_constant << "\" .*" << std::endl;);
-                    std::cout << "Rewrite: (str.contains X const) -> (str.in_re X (re.++ .* const .*))" << std::endl;
+                    //TRACE("ext_str_tactic", tout << "str.contains rewrite applies: " << mk_pp(haystack, m) << " in .* \"" << string_constant << "\" .*" << std::endl;);
+                    //std::cout << "Rewrite: (str.contains X const) -> (str.in_re X (re.++ .* const .*))" << std::endl;
                     expr_ref string_expr(u.str.mk_string(string_constant), m);
                     expr_ref string_expr_re(u.re.mk_to_re(string_expr), m);
                     sort* re_str_sort = string_expr_re->get_sort();
@@ -428,7 +485,7 @@ class ext_str_tactic : public tactic {
                     sub.insert(contains, str_in_regex);
 					
 					//Put this here in case smth is different in other rewrites (Stefan)
-					stack.push_back(haystack);
+					stack.push_back(str_in_regex);
 					return;
                 }
             }
@@ -460,7 +517,7 @@ class ext_str_tactic : public tactic {
 					if(inthis == bythis && replacethis == needle){
 						//~ std::cout << "Rewrite 29: contains(replace(x,y,x), y) -> contains(x,y) " <<  std::endl;
 						expr_ref new_contains(u.str.mk_contains(inthis, needle), m);
-						std::cout << mk_pp(new_contains, m) << std::endl;
+						//std::cout << mk_pp(new_contains, m) << std::endl;
 						sub.insert(contains, new_contains);
 						stack.push_back(new_contains);
 						return;
@@ -476,7 +533,7 @@ class ext_str_tactic : public tactic {
 					if(inthis == bythis && replacethis == haystack){
 						//~ std::cout << "Rewrite 33: contains(x, replace(y,x,y)) -> contains(x,y) " <<  std::endl;
 						expr_ref new_contains(u.str.mk_contains(haystack, inthis), m);
-						std::cout << mk_pp(new_contains, m) << std::endl;
+						//std::cout << mk_pp(new_contains, m) << std::endl;
 						sub.insert(contains, new_contains);
 						stack.push_back(new_contains);
 						return;
@@ -504,7 +561,7 @@ class ext_str_tactic : public tactic {
 					u.str.is_replace(replacefind, innerbase, innerfind, innersubs);
 					if(replacebase == innerbase && replacebase == innersubs && replacebase == replacesubs){
 						//~ std::cout << "Rewrite 43: replace(x, replace(x,y,x), x) = x " <<  std::endl;
-						//~ std::cout << mk_pp(replacebase, m) << std::endl;
+						//std::cout << mk_pp(replacebase, m) << std::endl;
 						sub.insert(replace, replacebase);
 						stack.push_back(replacebase);
 						return;
@@ -534,8 +591,8 @@ class ext_str_tactic : public tactic {
 					expr* innerbase; expr* innerfind; expr* innersubs;
 					u.str.is_replace(replacesubs, innerbase, innerfind, innersubs);
 					if(replacebase == innerfind && replacefind == innerbase && replacefind == innersubs){
-						std::cout << "Rewrite 48: replace(x, y, replace(y,x,y)) = x " <<  std::endl;
-						std::cout << mk_pp(replacebase, m) << std::endl;
+						//std::cout << "Rewrite 48: replace(x, y, replace(y,x,y)) = x " <<  std::endl;
+						//std::cout << mk_pp(replacebase, m) << std::endl;
 						sub.insert(replace, replacebase);
 						stack.push_back(replacebase);
 						return;
@@ -548,6 +605,7 @@ class ext_str_tactic : public tactic {
 			stack.push_back(replacesubs);             
 			
 			
+			// This seems to be already in some simplifier before our rewrite rules.
 			// Rewrite 37: replace( (++ X Y) X Z) -> (++ Z Y)
 			//~ {
                 //~ if (u.str.is_concat(replacebase)) {
@@ -566,6 +624,47 @@ class ext_str_tactic : public tactic {
             //~ }
         }
 
+		/* ####################################################################################
+		 * PREPROCESSING functions
+		 * #################################################################################### 
+		 */
+		 
+		void preprocess_eq(expr* eq) {
+            expr* lhs;
+            expr* rhs;
+
+            m.is_eq(eq, lhs, rhs);
+			
+			//A variable is eq to a constant on the top level 
+			{
+				zstring string_constant;
+                if (u.str.is_var(lhs) && u.str.is_string(rhs, string_constant)) {
+					//std::cout << "found string constant variable" << std::endl; 
+					const_var[lhs] = rhs;
+				}
+			}
+			
+			//A variable is eq to a constant on the top level 
+			{
+				zstring string_constant;
+                if (u.str.is_var(rhs) && u.str.is_string(lhs, string_constant)) {
+					//std::cout << "found string constant variabe" << std::endl; 
+					const_var[rhs] = lhs;
+				}
+			}
+		}
+
+
+		/* ####################################################################################
+		 * POSTPROCESSING functions
+		 * #################################################################################### 
+		 */
+		 
+		 
+		/* ####################################################################################
+		 * TRAVERSING formula
+		 * #################################################################################### 
+		 */
         void operator()(goal_ref const& g, goal_ref_buffer& result) {
             SASSERT(g->is_well_formed());
             tactic_report report("ext_str", *g);
@@ -588,14 +687,27 @@ class ext_str_tactic : public tactic {
                 return;
             }
 
-
-			// TODO Top down? Why not bottom up?
-            expr_substitution sub(m);
-            unsigned size = g->size();
+			
+			//Preprocessing before the rewrite process
+			unsigned size = g->size();
             for (unsigned idx = 0; idx < size; ++idx) {
                 if (g->inconsistent()) break;
                 expr* curr = g->form(idx);
+                if (!is_app(curr)) continue;
+              
+                if (m.is_eq(curr)) {
+					preprocess_eq(curr);
+				} 
+			}
 
+			
+
+            expr_substitution sub(m);
+            //std::cout << size << std::endl;
+            for (unsigned idx = 0; idx < size; ++idx) {
+                if (g->inconsistent()) break;
+                expr* curr = g->form(idx);
+				//std::cout << mk_pp(curr, m) << std::endl;
                 if (is_app(curr)) {
                     stack.reset();
                     stack.push_back(curr);
@@ -652,6 +764,15 @@ class ext_str_tactic : public tactic {
                 g->update(i, new_curr, new_pr, g->dep(i));
             }
 
+
+			//Print out the post-rewrite formula
+            //~ for (unsigned idx = 0; idx < size; ++idx) {
+                //~ if (g->inconsistent()) break;
+                //~ expr* curr = g->form(idx);
+				//~ std::cout << mk_pp(curr, m) << std::endl;
+			//~ }
+			
+			
             /*
             for (auto e : m_delayed_assertions) {
                 g->assert_expr(e);
