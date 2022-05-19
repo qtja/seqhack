@@ -201,7 +201,7 @@ namespace smt {
     }
 
     void theory_str::assert_axiom(expr * _e) {
-        if (_e == nullptr) 
+        if (_e == nullptr)
             return;
         if (opt_VerifyFinalCheckProgress) {
             finalCheckProgressIndicator = true;
@@ -1812,7 +1812,7 @@ namespace smt {
             expr_ref zero(mk_string("0"), m);
             // let (the result starts with a "0") be p
             expr_ref starts_with_zero(u.str.mk_prefix(zero, ex), m);
-            // let (the result is "0") be q  
+            // let (the result is "0") be q
             expr_ref is_zero(ctx.mk_eq_atom(ex, zero), m);
             // encoding: the result does NOT start with a "0" (~p) xor the result is "0" (q)
             // ~p xor q == (~p or q) and (p or ~q)
@@ -1847,7 +1847,7 @@ namespace smt {
         expr_ref axiom(ctx.mk_eq_atom(ex, rhs), m);
         assert_axiom_rw(axiom);
     }
-    
+
     void theory_str::instantiate_axiom_str_from_code(enode * e) {
         ast_manager & m = get_manager();
 
@@ -3245,7 +3245,11 @@ namespace smt {
 
                 if (!overlapAssumptionUsed) {
                     overlapAssumptionUsed = true;
-                    assert_implication(ax_l, m_theoryStrOverlapAssumption_term);
+                    // add context dependent formula overlap predicate and relate it to the global overlap predicate
+                    sort * s = get_manager().mk_bool_sort();
+                    expr_ref new_OverlapAssumption_term = expr_ref(mk_fresh_const(newOverlapStr, s), get_manager());
+                    assert_implication(ax_l, new_OverlapAssumption_term);
+                    assert_implication(new_OverlapAssumption_term, m_theoryStrOverlapAssumption_term);
                 }
             }
         } else if (splitType == 1) {
@@ -3303,7 +3307,11 @@ namespace smt {
 
                 if (!overlapAssumptionUsed) {
                     overlapAssumptionUsed = true;
-                    assert_implication(ax_l, m_theoryStrOverlapAssumption_term);
+                    // add context dependent formula overlap predicate and relate it to the global overlap predicate
+                    sort * s = get_manager().mk_bool_sort();
+                    expr_ref new_OverlapAssumption_term = expr_ref(mk_fresh_const(newOverlapStr, s), get_manager());
+                    assert_implication(ax_l, new_OverlapAssumption_term);
+                    assert_implication(new_OverlapAssumption_term, m_theoryStrOverlapAssumption_term);
                 }
 
             }
@@ -3355,7 +3363,11 @@ namespace smt {
 
                 if (!overlapAssumptionUsed) {
                     overlapAssumptionUsed = true;
-                    arrangement_disjunction.push_back(m_theoryStrOverlapAssumption_term);
+                    // add context dependent formula overlap predicate and relate it to the global overlap predicate
+                    sort * s = get_manager().mk_bool_sort();
+                    expr_ref new_OverlapAssumption_term = expr_ref(mk_fresh_const(newOverlapStr, s), get_manager());
+                    arrangement_disjunction.push_back(new_OverlapAssumption_term);
+                    assert_implication(new_OverlapAssumption_term, m_theoryStrOverlapAssumption_term);
                 }
 
             }
@@ -3400,7 +3412,11 @@ namespace smt {
 
                 if (!overlapAssumptionUsed) {
                     overlapAssumptionUsed = true;
-                    arrangement_disjunction.push_back(m_theoryStrOverlapAssumption_term);
+                    // add context dependent formula overlap predicate and relate it to the global overlap predicate
+                    sort * s = get_manager().mk_bool_sort();
+                    expr_ref new_OverlapAssumption_term = expr_ref(mk_fresh_const(newOverlapStr, s), get_manager());
+                    arrangement_disjunction.push_back(new_OverlapAssumption_term);
+                    assert_implication(new_OverlapAssumption_term, m_theoryStrOverlapAssumption_term);
                 }
 
             }
@@ -3641,7 +3657,11 @@ namespace smt {
 
                     if (!overlapAssumptionUsed) {
                         overlapAssumptionUsed = true;
-                        assert_implication(ax_l, m_theoryStrOverlapAssumption_term);
+                        // add context dependent formula overlap predicate and relate it to the global overlap predicate
+                        sort * s = get_manager().mk_bool_sort();
+                        expr_ref new_OverlapAssumption_term = expr_ref(mk_fresh_const(newOverlapStr, s), get_manager());
+                        assert_implication(ax_l, new_OverlapAssumption_term);
+                        assert_implication(new_OverlapAssumption_term, m_theoryStrOverlapAssumption_term);
                     }
 
                 }
@@ -3742,7 +3762,11 @@ namespace smt {
 
                     if (!overlapAssumptionUsed) {
                         overlapAssumptionUsed = true;
-                        arrangement_disjunction.push_back(m_theoryStrOverlapAssumption_term);
+                        // add context dependent formula overlap predicate and relate it to the global overlap predicate
+                        sort * s = get_manager().mk_bool_sort();
+                        expr_ref new_OverlapAssumption_term = expr_ref(mk_fresh_const(newOverlapStr, s), get_manager());
+                        arrangement_disjunction.push_back(new_OverlapAssumption_term);
+                        assert_implication(new_OverlapAssumption_term, m_theoryStrOverlapAssumption_term);
                     }
                 }
             }
@@ -4037,7 +4061,11 @@ namespace smt {
 
                     if (!overlapAssumptionUsed) {
                         overlapAssumptionUsed = true;
-                        assert_implication(ax_l, m_theoryStrOverlapAssumption_term);
+                        // add context dependent formula overlap predicate and relate it to the global overlap predicate
+                        sort * s = get_manager().mk_bool_sort();
+                        expr_ref new_OverlapAssumption_term = expr_ref(mk_fresh_const(newOverlapStr, s), get_manager());
+                        assert_implication(ax_l, new_OverlapAssumption_term);
+                        assert_implication(new_OverlapAssumption_term, m_theoryStrOverlapAssumption_term);
                     }
                 }
             }
@@ -4116,7 +4144,11 @@ namespace smt {
 
                     if (!overlapAssumptionUsed) {
                         overlapAssumptionUsed = true;
-                        arrangement_disjunction.push_back(m_theoryStrOverlapAssumption_term);
+                        // add context dependent formula overlap predicate and relate it to the global overlap predicate
+                        sort * s = get_manager().mk_bool_sort();
+                        expr_ref new_OverlapAssumption_term = expr_ref(mk_fresh_const(newOverlapStr, s), get_manager());
+                        arrangement_disjunction.push_back(new_OverlapAssumption_term);
+                        assert_implication(new_OverlapAssumption_term, m_theoryStrOverlapAssumption_term);
                     }
                 }
             }
@@ -4513,8 +4545,12 @@ namespace smt {
 
             // only add the overlap assumption one time
             if (!overlapAssumptionUsed) {
-                arrangement_disjunction.push_back(m_theoryStrOverlapAssumption_term);
-                overlapAssumptionUsed = true;
+              // add context dependent formula overlap predicate and relate it to the global overlap predicate
+              sort * s = get_manager().mk_bool_sort();
+              expr_ref new_OverlapAssumption_term = expr_ref(mk_fresh_const(newOverlapStr, s), get_manager());
+              arrangement_disjunction.push_back(new_OverlapAssumption_term);
+              assert_implication(new_OverlapAssumption_term, m_theoryStrOverlapAssumption_term);
+              overlapAssumptionUsed = true;
             }
 
         }
@@ -4577,7 +4613,7 @@ namespace smt {
         u.str.is_string(strExpr, stringVal);
         return true;
     }
-    
+
     /*
      * Look through the equivalence class of n to find a string constant.
      * Return that constant if it is found, and set hasEqcValue to true.
@@ -4604,7 +4640,7 @@ namespace smt {
                     return a;
                 }
                 curr = m_find.next(curr);
-            } 
+            }
             while (curr != first && curr != null_theory_var);
         }
         hasEqcValue = false;
@@ -6885,7 +6921,7 @@ namespace smt {
         }
 
         // heuristics
-        
+
         if (u.str.is_prefix(e)) {
             check_consistency_prefix(e, is_true);
         } else if (u.str.is_suffix(e)) {
@@ -6905,7 +6941,7 @@ namespace smt {
 
         VERIFY(u.str.is_prefix(e, needle, haystack));
         TRACE("str", tout << "check consistency of prefix predicate: " << mk_pp(needle, m) << " prefixof " << mk_pp(haystack, m) << std::endl;);
-        
+
         zstring needleStringConstant;
         if (get_string_constant_eqc(needle, needleStringConstant)) {
             if (u.str.is_itos(haystack) && is_true) {
@@ -6932,7 +6968,7 @@ namespace smt {
 
         VERIFY(u.str.is_suffix(e, needle, haystack));
         TRACE("str", tout << "check consistency of suffix predicate: " << mk_pp(needle, m) << " suffixof " << mk_pp(haystack, m) << std::endl;);
-        
+
         zstring needleStringConstant;
         if (get_string_constant_eqc(needle, needleStringConstant)) {
             if (u.str.is_itos(haystack) && is_true) {
@@ -6959,7 +6995,7 @@ namespace smt {
 
         VERIFY(u.str.is_contains(e, haystack, needle)); // first string contains second one
         TRACE("str", tout << "check consistency of contains predicate: " << mk_pp(haystack, m) << " contains " << mk_pp(needle, m) << std::endl;);
-        
+
         zstring needleStringConstant;
         if (get_string_constant_eqc(needle, needleStringConstant)) {
             if (u.str.is_itos(haystack) && is_true) {
@@ -7052,7 +7088,7 @@ namespace smt {
         m_concat_eval_todo.reset();
         m_delayed_axiom_setup_terms.reset();
         m_delayed_assertions_todo.reset();
-        
+
         TRACE_CODE(if (is_trace_enabled("t_str_dump_assign_on_scope_change")) { dump_assignments(); });
 
         // list of expr* to remove from cut_var_map
@@ -8386,7 +8422,7 @@ namespace smt {
                 }
             }
         }
-        
+
         if (!needToAssignFreeVars) {
 
             // check string-int terms
@@ -8685,7 +8721,7 @@ namespace smt {
         } else if (u.str.is_itos(ex)) {
             expr* fromInt = nullptr;
             u.str.is_itos(ex, fromInt);
-            
+
             arith_value v(m);
             v.init(&ctx);
             rational val;
@@ -8808,7 +8844,7 @@ namespace smt {
         if (!u.str.is_string(to_app(Gamma.get(left_count)))) {
             rational offsetLen = offset - left_length + 1;
             extra_left_cond = m_autil.mk_ge(u.str.mk_length(Gamma.get(left_count)), mk_int(offsetLen));
-        } 
+        }
 
         // find len(Delta[:j])
         unsigned right_count = 0;
@@ -8887,7 +8923,7 @@ namespace smt {
 
     expr* theory_str::refine_dis(expr* lhs, expr* rhs) {
         ast_manager & m = get_manager();
-        
+
         expr_ref lesson(m);
         lesson = m.mk_not(m.mk_eq(lhs, rhs));
         TRACE("str", tout << "learning not " << mk_pp(lesson, m) << std::endl;);
