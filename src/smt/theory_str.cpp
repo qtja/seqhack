@@ -4817,10 +4817,13 @@ namespace smt {
             //} else if (getNodeType(t, node) == my_Z3_Func) {
         } else if (is_app(node)) {
             app * func_app = to_app(node);
-            unsigned int argCount = func_app->get_num_args();
-            for (unsigned int i = 0; i < argCount; i++) {
-                expr * argAst = func_app->get_arg(i);
-                get_const_str_asts_in_node(argAst, astList);
+            // the following check is only valid when the operator is string concatenate
+            if (u.str.is_concat(func_app)) {
+              unsigned int argCount = func_app->get_num_args();
+              for (unsigned int i = 0; i < argCount; i++) {
+                  expr * argAst = func_app->get_arg(i);
+                  get_const_str_asts_in_node(argAst, astList);
+              }
             }
         }
     }
