@@ -1100,9 +1100,9 @@ namespace smt {
 
         TRACE("str", tout << "instantiate CharAt axiom for " << mk_pp(expr, m) << std::endl;);
 
-        expr_ref ts0(mk_str_var("ts0"), m);
-        expr_ref ts1(mk_str_var("ts1"), m);
-        expr_ref ts2(mk_str_var("ts2"), m);
+        expr_ref ts0(mk_str_var("ch_ts0"), m);
+        expr_ref ts1(mk_str_var("ch_ts1"), m);
+        expr_ref ts2(mk_str_var("ch_ts2"), m);
 
         expr_ref cond(m.mk_and(
                           m_autil.mk_ge(arg1, mk_int(0)),
@@ -1134,8 +1134,8 @@ namespace smt {
 
         TRACE("str", tout << "instantiate prefixof axiom for " << mk_pp(expr, m) << std::endl;);
 
-        expr_ref ts0(mk_str_var("ts0"), m);
-        expr_ref ts1(mk_str_var("ts1"), m);
+        expr_ref ts0(mk_str_var("p_ts0"), m);
+        expr_ref ts1(mk_str_var("p_ts1"), m);
 
         expr_ref_vector innerItems(m);
         innerItems.push_back(ctx.mk_eq_atom(expr->get_arg(1), mk_concat(ts0, ts1)));
@@ -1170,8 +1170,8 @@ namespace smt {
 
         TRACE("str", tout << "instantiate suffixof axiom for " << mk_pp(expr, m) << std::endl;);
 
-        expr_ref ts0(mk_str_var("ts0"), m);
-        expr_ref ts1(mk_str_var("ts1"), m);
+        expr_ref ts0(mk_str_var("s_ts0"), m);
+        expr_ref ts1(mk_str_var("s_ts1"), m);
 
         expr_ref_vector innerItems(m);
         innerItems.push_back(ctx.mk_eq_atom(expr->get_arg(1), mk_concat(ts0, ts1)));
@@ -1235,8 +1235,8 @@ namespace smt {
 
         TRACE("str", tout << "instantiate Contains axiom for " << mk_pp(ex, m) << std::endl;);
 
-        expr_ref ts0(mk_str_var("ts0"), m);
-        expr_ref ts1(mk_str_var("ts1"), m);
+        expr_ref ts0(mk_str_var("c_ts0"), m);
+        expr_ref ts1(mk_str_var("c_ts1"), m);
 
         expr_ref breakdownAssert(ctx.mk_eq_atom(ex, ctx.mk_eq_atom(ex->get_arg(0), mk_concat(ts0, mk_concat(ex->get_arg(1), ts1)))), m);
         SASSERT(breakdownAssert);
@@ -1287,8 +1287,8 @@ namespace smt {
 
         TRACE("str", tout << "instantiate str.indexof axiom for " << mk_pp(ex, m) << std::endl;);
 
-        expr_ref x1(mk_str_var("x1"), m);
-        expr_ref x2(mk_str_var("x2"), m);
+        expr_ref x1(mk_str_var("i_x1"), m);
+        expr_ref x2(mk_str_var("i_x2"), m);
 
         expr_ref condAst1(mk_contains(exHaystack, exNeedle), m);
         expr_ref condAst2(m.mk_not(ctx.mk_eq_atom(exNeedle, mk_string(""))), m);
@@ -1305,8 +1305,8 @@ namespace smt {
         //     args[0]  = x3 . x4
         //  /\ |x3| = |x1| + |args[1]| - 1
         //  /\ ! contains(x3, args[1])
-        expr_ref x3(mk_str_var("x3"), m);
-        expr_ref x4(mk_str_var("x4"), m);
+        expr_ref x3(mk_str_var("i_x3"), m);
+        expr_ref x4(mk_str_var("i_x4"), m);
         expr_ref tmpLen(m_autil.mk_add(ex, mk_strlen(ex->get_arg(1)), mk_int(-1)), m);
         SASSERT(tmpLen);
         thenItems.push_back(ctx.mk_eq_atom(exHaystack, mk_concat(x3, x4)));
@@ -1501,8 +1501,8 @@ namespace smt {
 
         TRACE("str", tout << "instantiate LastIndexof axiom for " << mk_pp(expr, m) << std::endl;);
 
-        expr_ref x1(mk_str_var("x1"), m);
-        expr_ref x2(mk_str_var("x2"), m);
+        expr_ref x1(mk_str_var("li_x1"), m);
+        expr_ref x2(mk_str_var("li_x2"), m);
         expr_ref indexAst(mk_int_var("index"), m);
         expr_ref_vector items(m);
 
@@ -1532,8 +1532,8 @@ namespace smt {
 
         if (!canSkip) {
             // args[0]  = x3 . x4 /\ |x3| = |x1| + 1 /\ ! contains(x4, args[1])
-            expr_ref x3(mk_str_var("x3"), m);
-            expr_ref x4(mk_str_var("x4"), m);
+            expr_ref x3(mk_str_var("li_x3"), m);
+            expr_ref x4(mk_str_var("li_x4"), m);
             expr_ref tmpLen(m_autil.mk_add(indexAst, mk_int(1)), m);
             thenItems.push_back(ctx.mk_eq_atom(expr->get_arg(0), mk_concat(x3, x4)));
             thenItems.push_back(ctx.mk_eq_atom(mk_strlen(x3), tmpLen));
@@ -1690,10 +1690,10 @@ namespace smt {
 
         TRACE("str", tout << "instantiate Replace axiom for " << mk_pp(ex, m) << std::endl;);
 
-        expr_ref x1(mk_str_var("x1"), m);
-        expr_ref x2(mk_str_var("x2"), m);
+        expr_ref x1(mk_str_var("rp_x1"), m);
+        expr_ref x2(mk_str_var("rp_x2"), m);
         expr_ref i1(mk_int_var("i1"), m);
-        expr_ref result(mk_str_var("result"), m);
+        expr_ref result(mk_str_var("rp_result"), m);
 
         expr * replaceS = nullptr;
         expr * replaceT = nullptr;
@@ -1714,8 +1714,8 @@ namespace smt {
         //  i1 = |x1|
         thenItems.push_back(ctx.mk_eq_atom(i1, mk_strlen(x1)));
         //  args[0]  = x3 . x4 /\ |x3| = |x1| + |args[1]| - 1 /\ ! contains(x3, args[1])
-        expr_ref x3(mk_str_var("x3"), m);
-        expr_ref x4(mk_str_var("x4"), m);
+        expr_ref x3(mk_str_var("rp_x3"), m);
+        expr_ref x4(mk_str_var("rp_x4"), m);
         expr_ref tmpLen(m_autil.mk_add(i1, mk_strlen(ex->get_arg(1)), mk_int(-1)), m);
         thenItems.push_back(ctx.mk_eq_atom(ex->get_arg(0), mk_concat(x3, x4)));
         thenItems.push_back(ctx.mk_eq_atom(mk_strlen(x3), tmpLen));
