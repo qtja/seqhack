@@ -361,6 +361,8 @@ public:
         bool is_from_code(expr const* n) const { return is_app_of(n, m_fid, OP_STRING_FROM_CODE); }
         bool is_to_code(expr const* n) const { return is_app_of(n, m_fid, OP_STRING_TO_CODE); }
 		
+		//bool is_and(expr const* n) const {return is_app_of(n, m_fid, OP_AND);}
+		
 		bool is_var(expr* a) const {
 			sort * ex_sort = a->get_sort();
 			sort * str_sort = mk_string_sort();

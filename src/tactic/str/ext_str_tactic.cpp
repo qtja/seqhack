@@ -20,7 +20,8 @@ class ext_str_tactic : public tactic {
         
         //Maps for storing some information about expressions for PRE/POSTPROCESSING
         std::map<expr* , expr*> const_var;
-        //std::map<expr* , expr*> regex_agg;
+        std::map<expr* , expr*> regex_agg;
+        //~ std::map<expr* , expr*> neg_regex_agg;
         
         ref<mc> m_mc;
         bool m_produce_models;
@@ -111,6 +112,8 @@ class ext_str_tactic : public tactic {
                         expr_ref regex(u.re.mk_concat(u.re.mk_star(u.re.mk_to_re(u.str.mk_string("0"))), u.re.mk_to_re(u.str.mk_string(integer_constant.to_string().c_str()))), m);
                         expr_ref str_in_regex(u.re.mk_in_re(string_subterm, regex), m);
                         sub.insert(eq, str_in_regex);
+                        stack.push_back(str_in_regex);
+                        return;
                     }
                 }
             }
@@ -141,8 +144,177 @@ class ext_str_tactic : public tactic {
                     TRACE("ext_str_tactic", tout << "str.indexof = -1 rewrite applies: " << mk_pp(haystack, m) << " does not contain " << mk_pp(needle, m) << std::endl;);
                     expr_ref h_not_in_n(m.mk_not(u.str.mk_contains(haystack, needle)), m);
                     sub.insert(eq, h_not_in_n);
+                    stack.push_back(h_not_in_n);
+                    return;
                 }
             }
+            
+            // Rewrite 7: replace(x, y, x) = \epsilon -> x = \epsilon (apparently epsilon is always lhs from some other previous rewriting)
+			{
+				expr_ref emptyStr(u.str.mk_string(""), m);
+                if (u.str.is_replace(rhs) && lhs == emptyStr) { 
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(rhs, inthis, replacethis, bythis);
+					if(inthis == bythis){
+						//std::cout << "Rewrite 7: replace(x, y, x) = epsilon -> x = epsilon " <<  std::endl;
+						expr_ref new_eq(m.mk_eq(inthis, lhs), m);
+						//std::cout << mk_pp(new_eq, m) << std::endl;
+						sub.insert(eq, new_eq);
+						stack.push_back(new_eq);
+						return;
+                    } 
+                }
+            }
+            
+			// Rewrite 8: replace(x, y, a) = epsilon -> x = epsilon and |y| >= 1 (a ist constant != epsilon)
+			{
+				zstring string_constant;					
+				expr_ref emptyStr(u.str.mk_string(""), m);
+                if (u.str.is_replace(rhs) && lhs == emptyStr) { 
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(rhs, inthis, replacethis, bythis);
+					if(u.str.is_string(bythis, string_constant) && bythis != emptyStr){
+						//std::cout << "Rewrite 8: replace(x, y, a) = epsilon -> x = epsilon and y != eps " <<  std::endl;			
+						expr_ref_vector thenItems(m);
+						thenItems.push_back(m.mk_eq(inthis, lhs));
+						thenItems.push_back(m.mk_not(m.mk_eq(replacethis, lhs)));
+						expr_ref thenBranch(m.mk_and(thenItems), m);
+						//std::cout << mk_pp(thenBranch, m) << std::endl;
+						sub.insert(eq, thenBranch);
+						stack.push_back(thenBranch);
+						return;
+                    } 
+                }
+            }
+            
+			// Rewrite 9: replace(x, a, epsilon) = epsilon -> x = epsilon or x = a
+			{
+				zstring string_constant;					
+				expr_ref emptyStr(u.str.mk_string(""), m);
+                if (u.str.is_replace(rhs) && lhs == emptyStr) { 
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(rhs, inthis, replacethis, bythis);
+					if(u.str.is_string(replacethis, string_constant) && replacethis != emptyStr && bythis == emptyStr){
+						//std::cout << "Rewrite 9: replace(x, a, epsilon) = epsilon -> x = epsilon or x = a " <<  std::endl;			
+						expr_ref_vector thenItems(m);
+						thenItems.push_back(m.mk_eq(inthis, lhs));
+						thenItems.push_back(m.mk_eq(inthis, replacethis));
+						expr_ref thenBranch(m.mk_or(thenItems), m);
+						//std::cout << mk_pp(thenBranch, m) << std::endl;
+						sub.insert(eq, thenBranch);
+						stack.push_back(thenBranch);
+						return;
+                    } 
+                }
+            }
+            
+			// Rewrite 13: a = replace(epsilon, x, y) -> x = epsilon and  y = a
+			{
+				zstring string_constant;					
+				expr_ref emptyStr(u.str.mk_string(""), m);
+                if (u.str.is_replace(rhs) && lhs != emptyStr && u.str.is_string(lhs, string_constant)) { 
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(rhs, inthis, replacethis, bythis);
+					if(inthis == emptyStr){
+						//std::cout << "Rewrite 13: a = replace(epsilon, x, y) -> x = epsilon and  y = a" <<  std::endl;			
+						expr_ref_vector thenItems(m);
+						thenItems.push_back(m.mk_eq(replacethis, emptyStr));
+						thenItems.push_back(m.mk_eq(bythis, lhs));
+						expr_ref thenBranch(m.mk_and(thenItems), m);
+						//std::cout << mk_pp(thenBranch, m) << std::endl;
+						sub.insert(eq, thenBranch);
+						stack.push_back(thenBranch);
+						return;
+                    } 
+                }
+                
+                if (u.str.is_replace(lhs) && rhs != emptyStr && u.str.is_string(rhs, string_constant)) { 
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(lhs, inthis, replacethis, bythis);
+					if(inthis == emptyStr){
+						//std::cout << "Rewrite 13: a = replace(epsilon, x, y) -> x = epsilon and  y = a" <<  std::endl;			
+						expr_ref_vector thenItems(m);
+						thenItems.push_back(m.mk_eq(replacethis, emptyStr));
+						thenItems.push_back(m.mk_eq(bythis, rhs));
+						expr_ref thenBranch(m.mk_and(thenItems), m);
+						//std::cout << mk_pp(thenBranch, m) << std::endl;
+						sub.insert(eq, thenBranch);
+						stack.push_back(thenBranch);
+						return;
+                    } 
+                }
+            }
+            
+            // Rewrite 14: x = replace(y, x, y) -> x = y
+			{
+                if (u.str.is_replace(rhs)) { 
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(rhs, inthis, replacethis, bythis);
+					if(lhs == replacethis && inthis == bythis){
+						//std::cout << "Rewrite 14: x = replace(y, x, y) -> x = y " <<  std::endl;
+						expr_ref new_eq(m.mk_eq(inthis, lhs), m);
+						//std::cout << mk_pp(new_eq, m) << std::endl;
+						sub.insert(eq, new_eq);
+						stack.push_back(new_eq);
+						return;
+                    } 
+                }
+				if (u.str.is_replace(lhs)) { 
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(lhs, inthis, replacethis, bythis);
+					if(rhs == replacethis && inthis == bythis){
+						//std::cout << "Rewrite 14: x = replace(y, x, y) -> x = y " <<  std::endl;
+						expr_ref new_eq(m.mk_eq(inthis, rhs), m);
+						//std::cout << mk_pp(new_eq, m) << std::endl;
+						sub.insert(eq, new_eq);
+						stack.push_back(new_eq);
+						return;
+                    } 
+                }
+            }
+
+
+			// Rewrite 15: x = replace(x, a, b) -> not x in regex .* a .* 
+			{
+				zstring a; zstring b;
+                if (u.str.is_replace(rhs)) { 
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(rhs, inthis, replacethis, bythis);
+					if(u.str.is_string(replacethis, a) && u.str.is_string(bythis, b) && a != b){
+						//std::cout << "Rewrite 15: x = replace(x, a, b) -> not x in regex .* a .* " <<  std::endl;	
+						expr_ref string_expr(u.str.mk_string(a), m);
+						expr_ref string_expr_re(u.re.mk_to_re(string_expr), m);
+						sort* re_str_sort = string_expr_re->get_sort();
+						expr_ref re_any_string(u.re.mk_full_seq(re_str_sort), m);
+						expr_ref regex(u.re.mk_concat(re_any_string, u.re.mk_concat(string_expr_re, re_any_string)), m);
+						expr_ref str_in_regex(u.re.mk_in_re(lhs, regex), m);
+						expr_ref str_notin_regex(m.mk_not(str_in_regex), m);
+						//std::cout << mk_pp(str_notin_regex, m) << std::endl;
+						sub.insert(eq, str_notin_regex);
+						stack.push_back(str_notin_regex);
+						return;
+                    } 
+                }
+                
+				if (u.str.is_replace(lhs)) { 
+					expr* inthis; expr* replacethis; expr* bythis;
+					u.str.is_replace(lhs, inthis, replacethis, bythis);
+					if(u.str.is_string(replacethis, a) && u.str.is_string(bythis, b) && a != b){
+						//std::cout << "Rewrite 15: x = replace(x, a, b) -> not x in regex .* a .* " <<  std::endl;	
+						expr_ref string_expr(u.str.mk_string(a), m);
+						expr_ref string_expr_re(u.re.mk_to_re(string_expr), m);
+						sort* re_str_sort = string_expr_re->get_sort();
+						expr_ref re_any_string(u.re.mk_full_seq(re_str_sort), m);
+						expr_ref regex(u.re.mk_concat(re_any_string, u.re.mk_concat(string_expr_re, re_any_string)), m);
+						expr_ref str_in_regex(u.re.mk_in_re(rhs, regex), m);
+						expr_ref str_notin_regex(m.mk_not(str_in_regex), m);
+						//std::cout << mk_pp(str_notin_regex, m) << std::endl;
+						sub.insert(eq, str_notin_regex);
+						stack.push_back(str_notin_regex);
+						return;
+                    } 
+                }
+			}
 
             stack.push_back(lhs);
             stack.push_back(rhs);
@@ -166,26 +338,7 @@ class ext_str_tactic : public tactic {
                 }
             }
             
-            /*
-             * 
-             * TODO: Check this for a postprocessing?
-            {
-				std::map<expr*, expr*>::iterator it;
-				it = regex_agg.find(str_term);
-				if(it == regex_agg.end()){
-					regex_agg[str_term] = re_term;
-				} else {
-					std::cout << mk_pp(str_term, m) << std::endl;
-					std::cout << mk_pp(regex_agg[str_term], m) << std::endl;
-					expr* old_re_term = it->second;
-                    expr_ref new_re_term(u.re.mk_inter(old_re_term, re_term), m);
-					sub.insert(re_term, new_re_term);
-					sub.erase(old_re_term);
-					it->second = new_re_term;
-				}
-				
-			}
-            */
+            
             stack.push_back(str_term);
             stack.push_back(re_term);
         }
@@ -660,6 +813,65 @@ class ext_str_tactic : public tactic {
 		 * #################################################################################### 
 		 */
 		 
+		void postprocess_regex_membership(expr* str_in_re) {
+
+            expr * str_term;
+            expr * re_term;
+
+            u.str.is_in_re(str_in_re, str_term, re_term);
+
+            {
+				std::map<expr*, expr*>::iterator it;
+				it = regex_agg.find(str_term);
+				if(it == regex_agg.end()){
+					regex_agg[str_term] = re_term;
+				} else {
+					std::cout << mk_pp(str_term, m) << std::endl;
+					std::cout << mk_pp(regex_agg[str_term], m) << std::endl;
+					expr* old_re_term = it->second;
+                    expr_ref new_re_term(u.re.mk_inter(old_re_term, re_term), m);
+					it->second = new_re_term;
+				}
+				
+			}
+        }
+        
+		void postprocess_not(expr* isnot) {
+
+            expr * inner_term;
+
+            m.is_not(isnot, inner_term);
+            //std::cout << "Found inner negate" << std::endl;
+            //std::cout << mk_pp(inner_term, m) << std::endl;
+            
+            {
+				if(u.str.is_in_re(inner_term)){
+					expr* str_term;
+					expr* re_term; 
+					u.str.is_in_re(inner_term, str_term, re_term);
+					std::map<expr*, expr*>::iterator it;
+					it = regex_agg.find(str_term);
+					if(it == regex_agg.end()){
+						zstring string_constant;
+						expr_ref string_expr(u.str.mk_string(string_constant), m);
+						expr_ref string_expr_re(u.re.mk_to_re(string_expr), m);
+						sort* re_str_sort = string_expr_re->get_sort();
+						expr_ref re_any_string(u.re.mk_full_seq(re_str_sort), m);
+						expr_ref new_re_term(u.re.mk_diff(re_any_string, re_term), m);
+						std::cout << mk_pp(new_re_term, m) << std::endl;
+						regex_agg.insert(std::make_pair(str_term, new_re_term));
+						//~ regex_agg[str_term] = new_re_term;
+					}else {
+						expr* old_re_term = it->second;
+						expr_ref new_re_term(u.re.mk_diff(old_re_term, re_term), m);
+						it->second = new_re_term;
+						//~ expr_ref new_re_term(u.re.mk_complement(re_term), m);
+						//~ expr_ref inter_new_old(u.re.mk_inter(it->second, new_re_term), m);
+						//~ it->second = inter_new_old;
+					}
+				}
+			}     
+        }
 		 
 		/* ####################################################################################
 		 * TRAVERSING formula
@@ -688,7 +900,7 @@ class ext_str_tactic : public tactic {
             }
 
 			
-			//Preprocessing before the rewrite process
+			//Preprocessing and collecting info before the rewrite process
 			unsigned size = g->size();
             for (unsigned idx = 0; idx < size; ++idx) {
                 if (g->inconsistent()) break;
@@ -765,7 +977,29 @@ class ext_str_tactic : public tactic {
             }
 
 
-			//Print out the post-rewrite formula
+			//~ //Postprocessing and aggregating after the rewrite process
+            //~ for (unsigned idx = 0; idx < size; ++idx) {
+                //~ if (g->inconsistent()) break;
+                //~ expr* curr = g->form(idx);
+                //~ if (!is_app(curr)) continue;
+              
+                //~ if (u.str.is_in_re(curr)) {
+					//~ postprocess_regex_membership(curr);
+				//~ } else if (m.is_not(curr)) {
+					//~ postprocess_not(curr);
+				//~ }
+			//~ }
+					
+			
+			//~ std::cout << "Aggregates Start" << std::endl;
+			//~ //Print out the post-rewrite aggregated regex
+			//~ for(std::map<expr*, expr*>::iterator it = regex_agg.begin(); it!=regex_agg.end(); it++){
+				//~ std::cout << mk_pp(it->second, m) << std::endl;
+			//~ }
+			//~ std::cout << "Aggregates End" << std::endl;
+
+			//~ size = g->size();
+			//~ //Print out the post-rewrite formula
             //~ for (unsigned idx = 0; idx < size; ++idx) {
                 //~ if (g->inconsistent()) break;
                 //~ expr* curr = g->form(idx);
