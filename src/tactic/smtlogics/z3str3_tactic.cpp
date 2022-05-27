@@ -27,6 +27,7 @@ Notes:
 #include "tactic/smtlogics/smt_tactic.h"
 #include "smt/params/smt_params.h"
 #include "ast/ast_pp.h"
+#include "tactic/core/ctx_simplify_tactic.h"
 
 
 /*
@@ -213,7 +214,7 @@ probe * mk_has_regex_probe() {
 tactic * mk_rewriter_tactic(ast_manager & m, params_ref const & p) {
     smt_params m_smt_params;
     m_smt_params.updt_params(p);
-   return and_then(mk_simplify_tactic(m, p), mk_ext_str_tactic(m, p));
+   return and_then(mk_simplify_tactic(m, p), and_then(mk_ctx_simplify_tactic(m, p), and_then(mk_ext_str_tactic(m, p), mk_simplify_tactic(m, p))));
 }
 
 tactic * mk_z3str3_tactic(ast_manager & m, params_ref const & p) {

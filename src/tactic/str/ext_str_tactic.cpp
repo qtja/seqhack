@@ -19,8 +19,8 @@ class ext_str_tactic : public tactic {
         ptr_vector<expr> stack;
         
         //Maps for storing some information about expressions for PRE/POSTPROCESSING
-        std::map<expr* , expr*> const_var;
-        std::map<expr* , expr*> regex_agg;
+        //std::map<expr* , expr*> const_var;
+        //std::map<expr* , expr*> regex_agg;
         //~ std::map<expr* , expr*> neg_regex_agg;
         
         ref<mc> m_mc;
@@ -315,7 +315,28 @@ class ext_str_tactic : public tactic {
                     } 
                 }
 			}
-
+			
+			// Rewrite 10: substring(x, 0, m) = epsilon and m > 0 -> x = epsilon
+			//~ {
+				//~ rational n_int; rational m_int;
+				//~ expr_ref emptyStr(u.str.mk_string(""), m);
+				//~ //expr_ref zeroInt(m.mk_int(0), m);
+				//~ zstring string_constant;
+				//~ if(u.str.is_extract(lhs) && rhs == emptyStr){
+					//~ expr* inthis; expr* fromhere; expr* substrlen;
+					//~ u.str.is_extract(lhs, inthis, fromhere, substrlen);
+					//~ if(m_autil.is_numeral(fromhere, n_int) && m_autil.is_numeral(substrlen, m_int))
+						//~ if(n_int == 0 && m_int > 0 ){
+							//~ std::cout << "Rewrite 10: substring(x, 0, m) = epsilon and m > 0 -> x = epsilon" <<  std::endl;	
+							//~ expr_ref new_eq(m.mk_eq(inthis, emptyStr), m);
+							//~ std::cout << mk_pp(new_eq, m) << std::endl;
+							//~ sub.insert(eq, new_eq);
+							//~ stack.push_back(new_eq);
+							//~ return;
+						//~ } 	
+				//~ }
+			//~ }
+			
             stack.push_back(lhs);
             stack.push_back(rhs);
         }
@@ -548,12 +569,12 @@ class ext_str_tactic : public tactic {
             expr* haystack;
             u.str.is_prefix(prefix, needle, haystack);
 
-           //Replace a Variable that has been marked as a constant before by a constant
-            std::map<expr*, expr*>::iterator it;
-            it = const_var.find(needle);
-            if(it != const_var.end()){
-				needle = it->second;
-			}
+           //~ //Replace a Variable that has been marked as a constant before by a constant
+            //~ std::map<expr*, expr*>::iterator it;
+            //~ it = const_var.find(needle);
+            //~ if(it != const_var.end()){
+				//~ needle = it->second;
+			//~ }
 
             // Rewrite: (str.prefixof "constant" S) --> (str.in_re S ("constant" ++ .*))
             {
@@ -582,12 +603,12 @@ class ext_str_tactic : public tactic {
             u.str.is_suffix(suffix, needle, haystack);
 
 
-           //Replace a Variable that has been marked as a constant before by a constant
-            std::map<expr*, expr*>::iterator it;
-            it = const_var.find(needle);
-            if(it != const_var.end()){
-				needle = it->second;
-			}
+           //~ //Replace a Variable that has been marked as a constant before by a constant
+            //~ std::map<expr*, expr*>::iterator it;
+            //~ it = const_var.find(needle);
+            //~ if(it != const_var.end()){
+				//~ needle = it->second;
+			//~ }
 			
             // Rewrite: (str.suffixof "constant" S) --> (str.in_re S (.* ++ "constant"))
             {
@@ -616,12 +637,12 @@ class ext_str_tactic : public tactic {
             u.str.is_contains(contains, haystack, needle);
             
             
-            //Replace a Variable that has been marked as a constant before in rewrite-preprocessing
-            std::map<expr*, expr*>::iterator it;
-            it = const_var.find(needle);
-            if(it != const_var.end()){
-				needle = it->second;
-			}
+            //~ //Replace a Variable that has been marked as a constant before in rewrite-preprocessing
+            //~ std::map<expr*, expr*>::iterator it;
+            //~ it = const_var.find(needle);
+            //~ if(it != const_var.end()){
+				//~ needle = it->second;
+			//~ }
 
             // Rewrite: (str.contains X "const") -> (str.in_re X (re.++ .* "const" .*))
             {
@@ -782,30 +803,30 @@ class ext_str_tactic : public tactic {
 		 * #################################################################################### 
 		 */
 		 
-		void preprocess_eq(expr* eq) {
-            expr* lhs;
-            expr* rhs;
+		//~ void preprocess_eq(expr* eq) {
+            //~ expr* lhs;
+            //~ expr* rhs;
 
-            m.is_eq(eq, lhs, rhs);
+            //~ m.is_eq(eq, lhs, rhs);
 			
-			//A variable is eq to a constant on the top level 
-			{
-				zstring string_constant;
-                if (u.str.is_var(lhs) && u.str.is_string(rhs, string_constant)) {
-					//std::cout << "found string constant variable" << std::endl; 
-					const_var[lhs] = rhs;
-				}
-			}
+			//~ //A variable is eq to a constant on the top level 
+			//~ {
+				//~ zstring string_constant;
+                //~ if (u.str.is_var(lhs) && u.str.is_string(rhs, string_constant)) {
+					//~ //std::cout << "found string constant variable" << std::endl; 
+					//~ const_var[lhs] = rhs;
+				//~ }
+			//~ }
 			
-			//A variable is eq to a constant on the top level 
-			{
-				zstring string_constant;
-                if (u.str.is_var(rhs) && u.str.is_string(lhs, string_constant)) {
-					//std::cout << "found string constant variabe" << std::endl; 
-					const_var[rhs] = lhs;
-				}
-			}
-		}
+			//~ //A variable is eq to a constant on the top level 
+			//~ {
+				//~ zstring string_constant;
+                //~ if (u.str.is_var(rhs) && u.str.is_string(lhs, string_constant)) {
+					//~ //std::cout << "found string constant variabe" << std::endl; 
+					//~ const_var[rhs] = lhs;
+				//~ }
+			//~ }
+		//~ }
 
 
 		/* ####################################################################################
@@ -813,65 +834,65 @@ class ext_str_tactic : public tactic {
 		 * #################################################################################### 
 		 */
 		 
-		void postprocess_regex_membership(expr* str_in_re) {
+		//~ void postprocess_regex_membership(expr* str_in_re) {
 
-            expr * str_term;
-            expr * re_term;
+            //~ expr * str_term;
+            //~ expr * re_term;
 
-            u.str.is_in_re(str_in_re, str_term, re_term);
+            //~ u.str.is_in_re(str_in_re, str_term, re_term);
 
-            {
-				std::map<expr*, expr*>::iterator it;
-				it = regex_agg.find(str_term);
-				if(it == regex_agg.end()){
-					regex_agg[str_term] = re_term;
-				} else {
-					std::cout << mk_pp(str_term, m) << std::endl;
-					std::cout << mk_pp(regex_agg[str_term], m) << std::endl;
-					expr* old_re_term = it->second;
-                    expr_ref new_re_term(u.re.mk_inter(old_re_term, re_term), m);
-					it->second = new_re_term;
-				}
+            //~ {
+				//~ std::map<expr*, expr*>::iterator it;
+				//~ it = regex_agg.find(str_term);
+				//~ if(it == regex_agg.end()){
+					//~ regex_agg[str_term] = re_term;
+				//~ } else {
+					//~ std::cout << mk_pp(str_term, m) << std::endl;
+					//~ std::cout << mk_pp(regex_agg[str_term], m) << std::endl;
+					//~ expr* old_re_term = it->second;
+                    //~ expr_ref new_re_term(u.re.mk_inter(old_re_term, re_term), m);
+					//~ it->second = new_re_term;
+				//~ }
 				
-			}
-        }
+			//~ }
+        //~ }
         
-		void postprocess_not(expr* isnot) {
+		//~ void postprocess_not(expr* isnot) {
 
-            expr * inner_term;
+            //~ expr * inner_term;
 
-            m.is_not(isnot, inner_term);
+            //~ m.is_not(isnot, inner_term);
             //std::cout << "Found inner negate" << std::endl;
             //std::cout << mk_pp(inner_term, m) << std::endl;
             
-            {
-				if(u.str.is_in_re(inner_term)){
-					expr* str_term;
-					expr* re_term; 
-					u.str.is_in_re(inner_term, str_term, re_term);
-					std::map<expr*, expr*>::iterator it;
-					it = regex_agg.find(str_term);
-					if(it == regex_agg.end()){
-						zstring string_constant;
-						expr_ref string_expr(u.str.mk_string(string_constant), m);
-						expr_ref string_expr_re(u.re.mk_to_re(string_expr), m);
-						sort* re_str_sort = string_expr_re->get_sort();
-						expr_ref re_any_string(u.re.mk_full_seq(re_str_sort), m);
-						expr_ref new_re_term(u.re.mk_diff(re_any_string, re_term), m);
-						std::cout << mk_pp(new_re_term, m) << std::endl;
-						regex_agg.insert(std::make_pair(str_term, new_re_term));
+            //~ {
+				//~ if(u.str.is_in_re(inner_term)){
+					//~ expr* str_term;
+					//~ expr* re_term; 
+					//~ u.str.is_in_re(inner_term, str_term, re_term);
+					//~ std::map<expr*, expr*>::iterator it;
+					//~ it = regex_agg.find(str_term);
+					//~ if(it == regex_agg.end()){
+						//~ zstring string_constant;
+						//~ expr_ref string_expr(u.str.mk_string(string_constant), m);
+						//~ expr_ref string_expr_re(u.re.mk_to_re(string_expr), m);
+						//~ sort* re_str_sort = string_expr_re->get_sort();
+						//~ expr_ref re_any_string(u.re.mk_full_seq(re_str_sort), m);
+						//~ expr_ref new_re_term(u.re.mk_diff(re_any_string, re_term), m);
+						//~ std::cout << mk_pp(new_re_term, m) << std::endl;
+						//~ regex_agg.insert(std::make_pair(str_term, new_re_term));
 						//~ regex_agg[str_term] = new_re_term;
-					}else {
-						expr* old_re_term = it->second;
-						expr_ref new_re_term(u.re.mk_diff(old_re_term, re_term), m);
-						it->second = new_re_term;
+					//~ }else {
+						//~ expr* old_re_term = it->second;
+						//~ expr_ref new_re_term(u.re.mk_diff(old_re_term, re_term), m);
+						//~ it->second = new_re_term;
 						//~ expr_ref new_re_term(u.re.mk_complement(re_term), m);
 						//~ expr_ref inter_new_old(u.re.mk_inter(it->second, new_re_term), m);
 						//~ it->second = inter_new_old;
-					}
-				}
-			}     
-        }
+					//~ }
+				//~ }
+			//~ }     
+        //~ }
 		 
 		/* ####################################################################################
 		 * TRAVERSING formula
@@ -902,15 +923,15 @@ class ext_str_tactic : public tactic {
 			
 			//Preprocessing and collecting info before the rewrite process
 			unsigned size = g->size();
-            for (unsigned idx = 0; idx < size; ++idx) {
-                if (g->inconsistent()) break;
-                expr* curr = g->form(idx);
-                if (!is_app(curr)) continue;
+            //~ for (unsigned idx = 0; idx < size; ++idx) {
+                //~ if (g->inconsistent()) break;
+                //~ expr* curr = g->form(idx);
+                //~ if (!is_app(curr)) continue;
               
-                if (m.is_eq(curr)) {
-					preprocess_eq(curr);
-				} 
-			}
+                //~ if (m.is_eq(curr)) {
+					//~ preprocess_eq(curr);
+				//~ } 
+			//~ }
 
 			
 
@@ -998,6 +1019,7 @@ class ext_str_tactic : public tactic {
 			//~ }
 			//~ std::cout << "Aggregates End" << std::endl;
 
+			//~ std::cout << "post rewrite ast ##################################" << std::endl;
 			//~ size = g->size();
 			//~ //Print out the post-rewrite formula
             //~ for (unsigned idx = 0; idx < size; ++idx) {
